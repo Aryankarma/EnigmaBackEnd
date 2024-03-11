@@ -1,6 +1,8 @@
 import fitz
 
-# extract text from pdf
+"""
+    extract text from the pdf
+"""
 def extract_text_from_pdf(filename: str):
     doc = fitz.open(f"{filename}")
     totalLength = 0
@@ -15,7 +17,10 @@ def extract_text_from_pdf(filename: str):
     
     return finalText, totalLength
     
-# splits based on no. of words of containing wordlength and provide array 
+    
+"""
+splits based on no. of words of containing wordlength and provide array 
+"""    
 def splittext(text, wordlength, splitinwords) -> list[str]:
     templength = wordlength
     textarray = []

@@ -11,6 +11,7 @@ from transformers import (
 import numpy as np
 from transformers.pipelines import AggregationStrategy
 
+
 summarizer = pipeline("summarization", model="philschmid/bart-large-cnn-samsum")
 
 def _summarize_text(text: str):
@@ -63,7 +64,14 @@ def summarize(text: str, total_length: int):
 # summarize from pdf
 def summarize_from_pdf(filename: str):
     finalText, totalLength = extract_text_from_pdf(filename)
-    return summarize(finalText, totalLength)
+    summary = summarize(finalText, totalLength)
+    
+    return {
+        "summary":  summary[0]["summary_text"],
+        "stl": len(summary[0]["summary_text"]),
+        "original_text": finalText,
+        "otl": totalLength
+    }
 
 @dataclass
 class OllamaSummary:
@@ -89,7 +97,7 @@ def ollama_summarize(text: str) -> OllamaSummary:
         "stream": False
     }
 
-    response: OllamaSummary = requests.post(url, json=data, headers=headers).json()
+    response = requests.post(url, json=data, headers=headers).json()
     return response
 
 if __name__=="__main__":
