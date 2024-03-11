@@ -3,3 +3,5 @@
 tmp/*
 
 .env
+
+__pycache__/

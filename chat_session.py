@@ -25,7 +25,6 @@ class ChatResponse:
     done: bool
     total_duration: int
     load_duration: int
-    prompt_eval_count: int
     prompt_eval_duration: int
     eval_count: int
     eval_duration: int

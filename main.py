@@ -51,19 +51,14 @@ async def uploadAFile(file: UploadFile = File()):
 
 
 class ChatInput(BaseModel):
-    context: str | None
     content: str | None
 
 @app.post("/chat/{chat_session}")
 def talk(chat_session: str, inp: ChatInput | None):
     if not inp:
         return {}
-    if inp.context:
-        rs = session.get_chat_session(chat_session, "qna_model")
-        mResponse = rs.send_message(inp.context)
-    else:
-        rs = session.get_chat_session(chat_session, "qna_model")
-        mResponse = rs.send_message(inp.content)
+    rs = session.get_chat_session(chat_session)
+    mResponse = rs.send_message(inp.content)
     return  mResponse.message
 
 
