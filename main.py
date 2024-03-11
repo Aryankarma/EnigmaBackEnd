@@ -1,18 +1,40 @@
 from fastapi import FastAPI, File, UploadFile
+from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
-from summarizer import summarize_from_pdf, ollama_summarize
+from summarizer import summarize_from_pdf, ollama_summarize, _summarize_text, extract_key_phrase
 
 app = FastAPI()
 
-class SummarizeContent(BaseModel):
+class Input(BaseModel):
     content: str
 
+
+allowed_origins = ["*"]
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=allowed_origins,
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
 @app.post("/summarize")
-async def summarize_the_text(data: SummarizeContent):
+async def summarize_the_text(data: Input):
+    print(data)
     summary = ollama_summarize(data.content)
     return summary
 
+@app.post("/summarize/text")
+def get_summary(data: Input):
+    print(data)
+    return _summarize_text(data.content)
 
+
+@app.post("/key_entities")
+def get_key_entities(data: Input):
+    print(data)
+    return extract_key_phrase(data.content)
 
 @app.post("/summarize/pdf")
 async def uploadAFile(file: UploadFile = File()):

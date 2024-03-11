@@ -1,44 +1,48 @@
-import ssl
-import os
-import json
-import urllib
 import requests
 from summarizer.utils import extract_text_from_pdf, splittext
 from dataclasses import dataclass
+from transformers import pipeline
+from transformers import (
+    TokenClassificationPipeline,
+    AutoModelForTokenClassification,
+    AutoTokenizer
+)
 
-def allowSelfSignedHttps(allowed):
-    if allowed and not os.environ.get('PYTHONHTTPSVERIFY', '') and getattr(ssl, '_create_unverified_context', None):
-        ssl._create_default_https_context = ssl._create_unverified_context
+import numpy as np
+from transformers.pipelines import AggregationStrategy
 
-def _summarize_text(text):
+summarizer = pipeline("summarization", model="philschmid/bart-large-cnn-samsum")
 
-    allowSelfSignedHttps(True)
-    data = {"inputs": text}
-    body = str.encode(json.dumps(data))
+def _summarize_text(text: str):
+    return summarizer(text)
 
-    url = os.environ.get("SUMMARY_ENDPOINT_URL")
-    api_key = os.environ.get("SUMMARY_ENDPOINT_KEY")
 
-    headers = {
-        'Content-Type':'application/json', 
-        'Authorization':('Bearer '+ api_key), 
-        'azureml-model-deployment': 'philschmid-bart-large-cnn-sa-18'
-    }
-    req = urllib.request.Request(url, body, headers)
+class KeyphraseExtractionPipeline(TokenClassificationPipeline):
 
-    try:
-        response = urllib.request.urlopen(req)
-        result = response.read()
-        output_string = result.decode('utf-8')
-        data = json.loads(output_string)
-        summary_text = data[0]["summary_text"]
-        return summary_text
+    def __init__(self, model, *args, **kwargs):
+        super().__init__(
+            model=AutoModelForTokenClassification.from_pretrained(model),
+            tokenizer=AutoTokenizer.from_pretrained(model),
+            *args,
+            **kwargs
+        )
 
-    except urllib.error.HTTPError as error:
-        print("The request failed with status code: " + str(error.code))
-        print(error.info())
-        print(error.read().decode("utf8", 'ignore'))
-        return error
+    def postprocess(self, all_outputs):
+        results = super().postprocess(
+            all_outputs=all_outputs,
+            aggregation_strategy=AggregationStrategy.SIMPLE,
+        )
+        return np.unique([result.get("word").strip() for result in results])
+
+def extract_key_phrase(text: str):
+    model_name = "ml6team/keyphrase-extraction-kbir-inspec"
+    extractor = KeyphraseExtractionPipeline(model=model_name)
+    result = extractor(text.replace("\n", " "))
+    r = []
+
+    for i in result:
+        r.append(i)
+    return r
 
 
 def summarize(text: str, total_length: int):
@@ -80,8 +84,8 @@ def ollama_summarize(text: str) -> OllamaSummary:
     headers = {"Content-Type": "application/json"}
     
     data = {
-        "model": "enigma",
-        "prompt": f"Summarize this text: {0}".format(text),
+        "model": "summarizer",
+        "prompt": text,
         "stream": False
     }
 
