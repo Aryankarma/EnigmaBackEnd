@@ -53,6 +53,12 @@ async def uploadAFile(file: UploadFile = File()):
 
     
 # Chat Configuration
+
+@app.get("/test")
+def test():
+    return "Hello World"
+
+
 @dataclass
 class QuestionInput(BaseModel):
     content: Optional[str] = None
@@ -71,7 +77,7 @@ def talk(chat_session: str, inp: QuestionInput, model: Optional[str] = "llama2")
         return  mResponse.message
 
 
-@app.post("/chat/s/{chat_session}")
-def talk(chat_session: str, inp: Input):
+@app.get("/chat/s/{chat_session}")
+def talk(chat_session: str):
     rs = session.get_chat_session(chat_session)
     return rs.get_messages()
