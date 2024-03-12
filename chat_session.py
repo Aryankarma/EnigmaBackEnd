@@ -25,9 +25,17 @@ class ChatResponse:
     done: bool
     total_duration: int
     load_duration: int
+    prompt_eval_count: int | None
     prompt_eval_duration: int
     eval_count: int
     eval_duration: int
+
+    def __init__(self, **kwargs) -> None:
+        for key, value in self.__dict__.items():
+            log(key, value)
+            if key in kwargs:
+                self[key] = kwargs[key]
+
 
     @classmethod
     def from_dict(cls, data):
@@ -59,7 +67,7 @@ class Chat:
 
     def send_message(self, inp: str, bot=False):
         if bot:
-            self._chat_content.append(Message(role="assistant", message=inp))
+            self._chat_content.append(Message(role="assistant", content=inp))
         self._chat_content.append(Message(inp))
         return self._get_model_response()
     

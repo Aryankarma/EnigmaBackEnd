@@ -50,11 +50,12 @@ async def uploadAFile(file: UploadFile = File()):
     }
 
 
-class ChatInput(BaseModel):
+class QuestionInput(BaseModel):
     content: str | None
 
 @app.post("/chat/{chat_session}")
-def talk(chat_session: str, inp: ChatInput | None):
+def talk(chat_session: str, inp: QuestionInput | None):
+    log(inp.__dict__)
     if not inp:
         return {}
     rs = session.get_chat_session(chat_session)
@@ -62,9 +63,9 @@ def talk(chat_session: str, inp: ChatInput | None):
     return  mResponse.message
 
 
-@app.post("/chat/r/{chat_session}")
+@app.post("/chat/s/{chat_session}")
 def talk(chat_session: str, inp: Input | None):
     if not inp:
         return {}
     rs = session.get_chat_session(chat_session)
-    return rs.get_messages()
+    return rs.__dict__
