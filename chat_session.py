@@ -50,8 +50,8 @@ class ChatResponse:
 class Chat:
     _session_id: str
     _context: str
-    _chat_content: list[Message] = []
     _model_name: str
+    _chat_content: list[Message] = []
 
     def __init__(self, id: str, model_name: str = "llama2"):
         self._session_id = id
@@ -59,7 +59,7 @@ class Chat:
 
     def set_context(self, context: str):
         self._context = context
-        self._chat_content = [*self._chat_content, Message(f"[Context] \n{self._context} \n[Provide Answer to the question based on this context.]")]
+        self._chat_content.append(Message(f"[Context] \n{self._context} \n[Provide Answer to the question based on this context.]"))
         return self._get_model_response()
 
     def get_context(self):

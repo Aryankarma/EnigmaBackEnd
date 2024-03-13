@@ -6,6 +6,7 @@ from logger import log
 from chat_session import ChatSession
 from typing import Optional
 from dataclasses import dataclass
+from uuid import uuid4
 
 app = FastAPI()
 
@@ -31,12 +32,23 @@ async def summarize_the_text(data: Input):
     return summary
 
 @app.post("/summarize/text")
-def get_summary(data: Input):
-    return _summarize_text(data.content)
+def get_summary(data: Input, model: Optional[str] = "llama2"):
+    summary = _summarize_text(data.content)[0]["summary_text"]
+    chat_session_id = uuid4()
+    rs = session.get_chat_session(chat_session_id, model)
+    mResponse = rs.set_context(data.content)
+    log(mResponse)
+    log(rs)
+    return {
+        "summary": summary,
+        "stl": len(summary),
+         "session_id": rs.get_session_id(),
+        "session_context_response": mResponse.message
+    }
 
 
 @app.post("/summarize/pdf")
-async def uploadAFile(file: UploadFile = File()):
+async def uploadAFile(file: UploadFile = File(), model: Optional[str] = "llama2"):
 
     ROOT_PATH="./tmp"
     fileData = await file.read()
@@ -45,10 +57,16 @@ async def uploadAFile(file: UploadFile = File()):
         writeFile.write(fileData)
 
     summary = summarize_from_pdf(f"{ROOT_PATH}/{file.filename}")
-
+    chat_session_id = uuid4()
+    rs = session.get_chat_session(chat_session_id, model)
+    mResponse = rs.set_context(summary["original_text"])
+    log(mResponse)
+    log(rs)
     return {
         **summary,
-        "key_entities": extract_key_phrase(summary["original_text"])
+        "key_entities": extract_key_phrase(summary["original_text"]),
+        "session_id": rs.get_session_id(),
+        "session_context_response": mResponse.message
     }
 
     
@@ -67,17 +85,16 @@ class QuestionInput(BaseModel):
 @app.post("/chat/{chat_session}")
 def talk(chat_session: str, inp: QuestionInput, model: Optional[str] = "llama2"):
     log(model)
-    if inp.context:
-        rs = session.get_chat_session(chat_session, model)
-        mResponse = rs.set_context(inp.context)
-        return  mResponse.message
-    else:
-        rs = session.get_chat_session(chat_session, model)
-        mResponse = rs.send_message(inp.content)
-        return  mResponse.message
+
+    rs = session.get_chat_session(chat_session, model)
+    mResponse = rs.send_message(inp.content)
+    return  mResponse.message
 
 
 @app.get("/chat/s/{chat_session}")
 def talk(chat_session: str):
     rs = session.get_chat_session(chat_session)
-    return rs.get_messages()
+    return {
+        **rs.__dict__,
+        "messages": rs.get_messages()
+    }
