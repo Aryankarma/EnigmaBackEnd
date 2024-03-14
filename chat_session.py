@@ -86,7 +86,7 @@ class Chat:
         if bot:
             self._chat_content.append(Message(role="assistant", content=inp))
         self._chat_content.append(Message(inp))
-        return self._get_model_response()ru
+        return self._get_model_response()
     
     def get_messages(self):
         return [message.__dict__ for message in self._chat_content]
