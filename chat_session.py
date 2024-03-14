@@ -3,6 +3,7 @@ from dataclasses import dataclass, asdict
 import requests
 import json
 from logger import log
+from exec_time import execution_time
 
 
 @dataclass
@@ -60,7 +61,8 @@ class Chat:
     def set_context(self, context: str):
         self._context = context
         self._chat_content.append(Message(f"[Context] \n{self._context} \n[Provide Answer to the question based on this context.]"))
-        return self._get_model_response()
+        # return self._get_model_response()
+        return "done"
 
     def get_context(self):
         return self._context
@@ -84,7 +86,7 @@ class Chat:
         if bot:
             self._chat_content.append(Message(role="assistant", content=inp))
         self._chat_content.append(Message(inp))
-        return self._get_model_response()
+        return self._get_model_response()ru
     
     def get_messages(self):
         return [message.__dict__ for message in self._chat_content]
@@ -105,6 +107,7 @@ class Chat:
 class ChatSession:
     _chat_sessions: list[Chat] = []
 
+    @execution_time
     def get_chat_session(self, id: str, model_name: str = None):
         for session in self._chat_sessions:
             if id == session.get_session_id():

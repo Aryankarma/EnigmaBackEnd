@@ -1,1 +1,1 @@
-from summarize import summarize_from_pdf, summarize, ollama_summarize, _summarize_text, extract_key_phrase
+from summarizer.summarize import summarize_from_pdf, summarize, ollama_summarize, _summarize_text, extract_key_phrase

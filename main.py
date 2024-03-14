@@ -58,15 +58,16 @@ async def uploadAFile(file: UploadFile = File(), model: Optional[str] = "llama2"
 
     summary = summarize_from_pdf(f"{ROOT_PATH}/{file.filename}")
     chat_session_id = uuid4()
+
     rs = session.get_chat_session(chat_session_id, model)
     mResponse = rs.set_context(summary["original_text"])
-    log(mResponse)
+    # log(mResponse)
     log(rs)
     return {
         **summary,
         "key_entities": extract_key_phrase(summary["original_text"]),
         "session_id": rs.get_session_id(),
-        "session_context_response": mResponse.message
+        "session_context_response": mResponse
     }
 
     

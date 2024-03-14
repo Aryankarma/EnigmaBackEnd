@@ -1,5 +1,5 @@
 import requests
-from summarizer.utils import extract_text_from_pdf, splittext
+from summarizer.utils import extract_text_from_pdf, split_text
 from dataclasses import dataclass
 from transformers import pipeline
 from transformers import (
@@ -7,6 +7,7 @@ from transformers import (
     AutoModelForTokenClassification,
     AutoTokenizer
 )
+from exec_time import execution_time
 
 import numpy as np
 from transformers.pipelines import AggregationStrategy
@@ -14,8 +15,12 @@ from transformers.pipelines import AggregationStrategy
 
 summarizer = pipeline("summarization", model="philschmid/bart-large-cnn-samsum")
 
+@execution_time
 def _summarize_text(text: str):
-    return summarizer(text)
+    print("Summarizing text")
+    summary = summarizer(text)
+    print("Summary done")
+    return summary
 
 
 class KeyphraseExtractionPipeline(TokenClassificationPipeline):
@@ -50,7 +55,7 @@ def summarize(text: str, total_length: int):
     summary = ""
 
     if total_length > 800:
-        splitted_text = splittext(text, 800)
+        splitted_text = split_text(text, 800)
         summary_pices = []
         for t in splitted_text:
             summary_pices.append(ollama_summarize(t))
