@@ -1,34 +1,40 @@
 import fitz
+from logger import log
 
-"""
-    extract text from the pdf
-"""
+
 def extract_text_from_pdf(filename: str):
-    doc = fitz.open(f"{filename}")
-    totalLength = 0
-    finalText = ""
+    try:
+        doc = fitz.open(filename)
+        total_words = 0
+        extracted_text = ""
+        page_count = 0
 
-    for page in doc:
-        page_text = page.get_text()
+        for page in doc:
+            page_text: str = page.get_text()
+            page_count += 1
+            without_new_line = page_text.strip().replace("\n", " ") 
+            log("Page", str(page_count) + ":", without_new_line)
+            extracted_text += without_new_line
+            total_words += len(page_text.split())
 
-        finalText = finalText + page_text 
-        totalLength = totalLength + round(len(page_text)/7)
-        print(f"The number of words in {page} is: {round(len(page_text)/7)}")
-    
-    return finalText, totalLength
-    
-    
-"""
-splits based on no. of words of containing wordlength and provide array 
-"""    
-def splittext(text, wordlength, splitinwords) -> list[str]:
-    templength = wordlength
-    textarray = []
+        return extracted_text, total_words
+    except Exception as e:
+        print(f"Error occurred while extracting text: {e}")
+        return None, 0
 
-    while templength >= 0:
-        part = " ".join(text.split()[:splitinwords])
-        text = " ".join(text.split()[splitinwords:])
-        templength = templength - splitinwords
-        textarray.append(part)
 
-    return textarray
+def split_text(text: str, word_length: int, split_in_words: int) -> list[str]:
+    try:
+        text_array = []
+        remaining_length = word_length
+
+        while remaining_length >= 0:
+            part = " ".join(text.split()[:split_in_words])
+            text = " ".join(text.split()[split_in_words:])
+            remaining_length -= split_in_words
+            text_array.append(part)
+
+        return text_array
+    except Exception as e:
+        print(f"Error occurred while splitting text: {e}")
+        return []
