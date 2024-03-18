@@ -43,7 +43,7 @@ def get_summary(data: Input, model: Optional[str] = "llama2"):
         "summary": summary,
         "stl": len(summary),
          "session_id": rs.get_session_id(),
-        "session_context_response": mResponse.message
+        "session_context_response": mResponse
     }
 
 
@@ -89,7 +89,7 @@ def talk(chat_session: str, inp: QuestionInput, model: Optional[str] = "llama2")
 
     rs = session.get_chat_session(chat_session, model)
     mResponse = rs.send_message(inp.content)
-    return  mResponse.message
+    return  mResponse
 
 
 @app.get("/chat/s/{chat_session}")

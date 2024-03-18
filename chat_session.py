@@ -60,7 +60,7 @@ class ChatResponse:
 
     def to_dict(self):
         data = asdict(self)
-        # data['message'] = asdict(data['message'])
+        data['message'] = asdict(data['message'])
         return data    
 
 class Chat:
@@ -86,6 +86,7 @@ class Chat:
 
     def set_context(self, context: str):
         self._context = context
+        log(self._chat_content)
         self._chat_content.append(
             Message(f"[Context] \n{self._context} [Context] \n[Provide Answer to the question based on this context.]"))
         # return self._get_model_response()
@@ -95,13 +96,17 @@ class Chat:
         return self._context
 
     def _get_model_response(self) -> ChatResponse:
+        for i in self._chat_content:
+            log(i.__dict__)
+
         response = requests.post(
             f"https://api.cloudflare.com/client/v4/accounts/1c7120b407404a4d257e57af5a88f88f/ai/run/@cf/meta/llama-2-7b-chat-fp16",
             headers={"Authorization": f"Bearer 3ti0Lh8dnLmIpbGi-0n7Z9o58JAoBgkBQh3k9tPh"},
+
             json={
                 "messages": [
                 {"role": "system", "content": self._system},
-                    *self._chat_content
+                    *self.get_messages()
                 ]
             }
         )
@@ -110,7 +115,8 @@ class Chat:
         if result["success"]:
             log(result["result"]["response"])
             self._chat_content.append(Message(role="assistant", content=result["result"]["response"]))
-        return result
+            return result["result"]["response"]
+        return "failed"
 
     def send_message(self, inp: str, bot=False):
         if bot:
