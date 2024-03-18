@@ -7,6 +7,7 @@ from transformers import (
     AutoModelForTokenClassification,
     AutoTokenizer
 )
+from logger import log
 from exec_time import execution_time
 
 import numpy as np
@@ -55,11 +56,11 @@ def summarize(text: str, total_length: int):
     summary = ""
 
     if total_length > 800:
-        splitted_text = split_text(text, 800)
+        splitted_text = split_text(text, total_length, 800)
         summary_pices = []
         for t in splitted_text:
-            summary_pices.append(ollama_summarize(t))
-        summary = ollama_summarize("".join(summary_pices))
+            summary_pices.append(just_summarize(t))
+        summary = just_summarize("".join(summary_pices))
     else:
         summary = _summarize_text(text)
 
@@ -72,8 +73,8 @@ def summarize_from_pdf(filename: str):
     summary = summarize(finalText, totalLength)
     
     return {
-        "summary":  summary[0]["summary_text"],
-        "stl": len(summary[0]["summary_text"]),
+        "summary":  summary,
+        "stl": len(summary),
         "original_text": finalText,
         "otl": totalLength
     }
@@ -92,18 +93,38 @@ class OllamaSummary:
     eval_duration: str
 
 # summarize with ollama
-def ollama_summarize(text: str) -> OllamaSummary: 
-    url = "http://localhost:11434/api/generate"
-    headers = {"Content-Type": "application/json"}
+# def ollama_summarize(text: str) -> OllamaSummary: 
+#     url = "http://localhost:11434/api/generate"
+#     headers = {"Content-Type": "application/json"}
     
-    data = {
-        "model": "summarizer",
-        "prompt": text,
-        "stream": False
-    }
+#     data = {
+#         "model": "summarizer",
+#         "prompt": text,
+#         "stream": False
+#     }
 
-    response = requests.post(url, json=data, headers=headers).json()
-    return response
+#     response = requests.post(url, json=data, headers=headers).json()
+#     return response
+@execution_time
+def just_summarize(text: str) -> str: 
+
+    response = requests.post(
+        f"https://api.cloudflare.com/client/v4/accounts/1c7120b407404a4d257e57af5a88f88f/ai/run/@cf/meta/llama-2-7b-chat-fp16",
+        headers={"Authorization": f"Bearer 3ti0Lh8dnLmIpbGi-0n7Z9o58JAoBgkBQh3k9tPh"},
+        json={
+            "messages": [
+                { "role": "system", "content": "You are enigma an lawyer AI Assistant" },
+                { "role": "user", "content": f"Summarize: {text}" }
+            ]
+        }
+    )
+
+    result = response.json()
+    if result["success"]:
+        log(result["result"]["response"])
+        return result["result"]["response"]
+    return result
+
 
 if __name__=="__main__":
     summarize_from_pdf("./sample.pdf")

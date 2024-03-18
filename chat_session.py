@@ -18,25 +18,40 @@ class Message:
     def from_dict(cls, data):
         return cls(**data)
 
+# @dataclass
+# class ChatResponse:
+    # model: str
+    # created_at: str
+    # message: Message
+    # done: bool
+    # total_duration: int
+    # load_duration: int
+    # prompt_eval_duration: int
+    # eval_count: int
+    # eval_duration: int
+    # prompt_eval_count: int = None
+
+    # # def __init__(self, **kwargs) -> None:
+    # #     for key, value in self.__dict__.items():
+    # #         log(key, value)
+    # #         if key in kwargs:
+    # #             self[key] = kwargs[key]
+
+
+    # @classmethod
+    # def from_dict(cls, data):
+    #     data['message'] = Message.from_dict(data['message'])
+    #     return cls(**data)
+
+    # def to_dict(self):
+    #     data = asdict(self)
+    #     # data['message'] = asdict(data['message'])
+    #     return data
+
+
 @dataclass
 class ChatResponse:
-    model: str
-    created_at: str
     message: Message
-    done: bool
-    total_duration: int
-    load_duration: int
-    prompt_eval_duration: int
-    eval_count: int
-    eval_duration: int
-    prompt_eval_count: int = None
-
-    # def __init__(self, **kwargs) -> None:
-    #     for key, value in self.__dict__.items():
-    #         log(key, value)
-    #         if key in kwargs:
-    #             self[key] = kwargs[key]
-
 
     @classmethod
     def from_dict(cls, data):
@@ -46,13 +61,24 @@ class ChatResponse:
     def to_dict(self):
         data = asdict(self)
         # data['message'] = asdict(data['message'])
-        return data
+        return data    
 
 class Chat:
     _session_id: str
     _context: str
     _model_name: str
     _chat_content: list[Message] = []
+    _system="""
+        You are Enigma, an LLM developed by Team Strivers to summarize legal documents and extract key insights. Your primary function is to respond to questions related to specific paragraphs within these documents.
+
+        Master Prompt:
+
+        Input: [Contextual Paragraph]
+
+        you will be given the input and you have to provide the answer of the question based on the given input.
+
+        Don't provide the answer of the question if it is not related to the context paragraph.
+    """
 
     def __init__(self, id: str, model_name: str = "llama2"):
         self._session_id = id
@@ -60,7 +86,8 @@ class Chat:
 
     def set_context(self, context: str):
         self._context = context
-        self._chat_content.append(Message(f"[Context] \n{self._context} \n[Provide Answer to the question based on this context.]"))
+        self._chat_content.append(
+            Message(f"[Context] \n{self._context} [Context] \n[Provide Answer to the question based on this context.]"))
         # return self._get_model_response()
         return "done"
 
@@ -68,19 +95,22 @@ class Chat:
         return self._context
 
     def _get_model_response(self) -> ChatResponse:
-        url = "http://localhost:11434/api/chat"
+        response = requests.post(
+            f"https://api.cloudflare.com/client/v4/accounts/1c7120b407404a4d257e57af5a88f88f/ai/run/@cf/meta/llama-2-7b-chat-fp16",
+            headers={"Authorization": f"Bearer 3ti0Lh8dnLmIpbGi-0n7Z9o58JAoBgkBQh3k9tPh"},
+            json={
+                "messages": [
+                {"role": "system", "content": self._system},
+                    *self._chat_content
+                ]
+            }
+        )
 
-        data = {
-            "model": self._model_name,
-            "messages": self.get_messages(),
-            "stream": False
-        }
-
-        r = requests.post(url, json=data).json()
-        response = ChatResponse.from_dict(r)
-        log(response)
-        self._chat_content.append(Message(response.message.content, role=response.message.role))
-        return response
+        result = response.json()
+        if result["success"]:
+            log(result["result"]["response"])
+            self._chat_content.append(Message(role="assistant", content=result["result"]["response"]))
+        return result
 
     def send_message(self, inp: str, bot=False):
         if bot:
